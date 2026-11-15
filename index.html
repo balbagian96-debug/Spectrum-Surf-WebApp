@@ -365,7 +365,10 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 36px; border-radius
   .topics { grid-template-columns: 1fr 1fr; }
   .cols .topics { grid-template-columns: 1fr; }
   .col > * { min-width: 0; }
-  .team { grid-template-columns: repeat(4, 1fr); }
+  .team { grid-template-columns: repeat(7, 1fr); gap: 10px 6px; }
+  .member { gap: 6px; }
+  .mname { font-size: 0.42rem; padding: 6px 3px; overflow-wrap: anywhere; }
+  .mrole { font-size: 0.8rem; }
   .stage { width: 100%; max-width: calc((100vh - 120px) * 4 / 3); margin: 0 auto; }
   .stage canvas { border-width: 4px; }
   .ov h2 { font-size: 0.9rem; }
@@ -375,6 +378,18 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 36px; border-radius
   .mutebtn { top: 6px; }
 }
 @media (orientation: landscape) and (max-height: 520px) {
+  #app { padding-top: 22px; padding-bottom: 62px; }
+  .stage { max-width: calc((100vh - 150px) * 4 / 3); }
+  #hHint { display: none; }
+  .stack > .topbar:has(+ .banner) { position: absolute; left: 0; top: 18px; z-index: 2; }
+  .back { width: 42px; height: 42px; }
+  .banner::after { height: 12px; margin-top: 6px; }
+  .row .btn.small { padding: 8px 10px 10px; font-size: 0.55rem; }
+  .runhud { font-size: 0.6rem; padding-right: 92px; }
+  .mutebtn { font-size: 0.38rem; padding: 5px 7px; }
+  .stage { max-width: calc((100vh - 160px) * 4 / 3); }
+  .member img { width: 56px; }
+  .team { margin-top: 4px; }
   body { font-size: 16px; }
   .btn { padding: 12px 14px 14px; font-size: 0.7rem; }
   .day, .card, .copy, .surf-desc, .qtext { padding: 14px 18px; }
@@ -383,8 +398,6 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 36px; border-radius
   .ptitle span { font-size: 1.6rem; }
   .qtext { font-size: 1rem; }
   .chip { padding: 6px; font-size: 0.8rem; }
-  .member img { width: 60px; }
-  .mname { font-size: 0.5rem; padding: 6px; }
 }
 </style>
 <!-- music is loaded from assets/audio by the script -->
