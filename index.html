@@ -1239,6 +1239,37 @@ function layout(kind) {
   st.innerHTML = ""; pre.forEach(function (n) { st.appendChild(n); }); st.appendChild(cols); post.forEach(function (n) { st.appendChild(n); });
 }
 
+
+// ---------- narration (pre-generated text-to-speech clips in assets/voice)
+var SAY = { a: null, name: null };
+function sayStop() {
+  if (SAY.a) { try { SAY.a.pause(); } catch (e) {} SAY.a = null; }
+  SAY.name = null; duck(false);
+  document.querySelectorAll(".listen").forEach(function (b) { b.textContent = "Listen"; b.setAttribute("aria-pressed", "false"); });
+}
+function duck(on) { if (curTrack && MA[curTrack]) { try { MA[curTrack].volume = on ? 0.12 : 0.55; } catch (e) {} } }
+function sayToggle(name, btn) {
+  if (SAY.name === name) { sayStop(); return; }
+  sayStop();
+  var a = new Audio("assets/voice/" + name + ".mp3"); a.volume = 1; SAY.a = a; SAY.name = name;
+  a.addEventListener("ended", function () { if (SAY.a === a) sayStop(); });
+  a.play().then(function () { duck(true); if (btn) { btn.textContent = "Stop"; btn.setAttribute("aria-pressed", "true"); } }).catch(function () { SAY.a = null; SAY.name = null; });
+}
+function listenBtn(name) { var b = document.createElement("button"); b.className = "btn small sun listen"; b.dataset.say = name; b.setAttribute("aria-pressed", "false"); b.textContent = "Listen"; return b; }
+function addListen(sel, name, where) {
+  var t = app.querySelector(sel); if (!t || AU.noVoice) return;
+  var b = listenBtn(name);
+  if (where === "before") t.parentNode.insertBefore(b, t); else t.parentNode.insertBefore(b, t.nextSibling);
+}
+function addNarration(h, m) {
+  if (h === "home" || (!m && h !== "surf" && h !== "quiz" && h !== "about" && h !== "team" && h !== "play")) addListen(".day", "wave-" + (S.day + 1) + "-short");
+  else if (m) addListen(".copy", "wave-" + (S.info + 1) + "-full");
+  else if (h === "surf") addListen(".surf-desc", "wave-" + (S.surf + 1) + "-short");
+  else if (h === "quiz" && !S.run) addListen(".lead", "quiz");
+  else if (h === "about") addListen(".card", "about");
+  else if (h === "team") addListen(".team", "team", "before");
+}
+
 // ---------- routing
 function route() {
   var h = location.hash.slice(1) || "home", m = /^wave-([1-7])$/.exec(h), cur = h, html;
@@ -1249,12 +1280,14 @@ function route() {
   else if (h === "about") html = vAbout();
   else if (h === "team") { html = vTeam(); cur = "about"; }
   else { cur = "home"; html = vHome(); }
+  sayStop();
   app.innerHTML = html;
   layout(cur === "home" ? "home" : m ? "info" : h === "surf" ? "surf" : h === "about" ? "about" : h === "quiz" ? (S.run ? "run" : "menu") : h === "play" ? (S.qz ? "q" : "") : "");
   if (cur !== "quiz") S.run = null;
   tabsEl.innerHTML = TABS.map(function (t) {
     return '<button class="tab" data-go="' + t[0] + '"' + (t[0] === cur ? ' aria-current="page"' : "") + ">" + ICONS[t[0]] + "<span>" + t[1].toUpperCase() + "</span></button>";
   }).join("");
+  addNarration(h === "" ? "home" : h, m);
   setMusic(h === "team" ? "team" : cur);
   window.scrollTo(0, 0);
   if (cur === "quiz") mountRun();
@@ -1316,7 +1349,8 @@ window.addEventListener("hashchange", route);
 document.addEventListener("click", function (e) {
   if (!userStarted) { userStarted = true; applyMusic(); }
   if (e.target.closest("button, a")) clickSfx();
-  if (e.target.closest("#mute")) { AU.muted = !AU.muted; syncMute(); applyMusic(); return; }
+  var ls = e.target.closest("[data-say]"); if (ls) { sayToggle(ls.dataset.say, ls); return; }
+  if (e.target.closest("#mute")) { AU.muted = !AU.muted; syncMute(); if (AU.muted) sayStop(); applyMusic(); return; }
   var el = e.target.closest("[data-go],[data-run],[data-topic],[data-ans],[data-act]");
   if (!el) return;
   if (el.dataset.run) { runAction(el.dataset.run, el); return; }
@@ -1359,6 +1393,7 @@ document.addEventListener("input", function (e) {
   document.getElementById("sname").textContent = w.name;
   document.getElementById("sdesc").textContent = w.short;
   document.getElementById("learn").dataset.go = "wave-" + (S.surf + 1);
+  sayStop(); var lb = app.querySelector(".listen"); if (lb) lb.dataset.say = "wave-" + (S.surf + 1) + "-short";
 });
 route();
 syncMute();
