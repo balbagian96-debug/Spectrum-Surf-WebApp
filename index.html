@@ -347,6 +347,45 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 36px; border-radius
 .mname { font-family: var(--font-display); font-size: 0.58rem; line-height: 1.5; color: var(--ink); padding: 8px 10px; clip-path: var(--clip); box-shadow: inset 0 0 0 3px var(--ink); width: 100%; }
 .mrole { font-family: var(--font-body); font-weight: 700; font-size: 1rem; color: #fff; text-shadow: var(--outline); line-height: 1.25; }
 .mutebtn { position: fixed; top: max(8px, env(safe-area-inset-top, 0px)); right: max(8px, env(safe-area-inset-right, 0px)); z-index: 30; font-family: var(--font-display); font-size: 0.45rem; padding: 8px 10px; color: var(--ink); background: var(--cream); border: 3px solid var(--ink); cursor: pointer; }
+
+.cols, .col { display: contents; }
+.runhud { order: 1; } #hQuestion { order: 2; } #hChips { order: 3; } #stage { order: 4; } #hMsg { order: 5; } #hKit { order: 6; } #hHint { order: 7; } .stack > .row, .col > .row { order: 8; }
+@media (orientation: landscape) and (min-width: 640px) {
+  #app { max-width: 960px; padding-bottom: 84px; padding-top: 28px; }
+  .tabs nav { max-width: 960px; gap: 8px; }
+  .tab { padding: 4px 2px 5px; font-size: 0.42rem; }
+  .tab svg { width: 20px; height: 20px; }
+  .tabs { border-top-width: 4px; padding-top: 5px; padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px)); }
+  .stack { gap: 14px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 26px; align-items: start; }
+  .col { display: grid; gap: 14px; align-content: start; min-width: 0; }
+  .plogo { width: 100%; max-width: 420px; margin: 0 auto; }
+  .banner { padding-top: 0; }
+  .surf-desc { min-height: 0; }
+  .topics { grid-template-columns: 1fr 1fr; }
+  .cols .topics { grid-template-columns: 1fr; }
+  .col > * { min-width: 0; }
+  .team { grid-template-columns: repeat(4, 1fr); }
+  .stage { width: 100%; max-width: calc((100vh - 120px) * 4 / 3); margin: 0 auto; }
+  .stage canvas { border-width: 4px; }
+  .ov h2 { font-size: 0.9rem; }
+  .ov .big { font-size: 1.5rem; }
+  .ov { gap: 8px; padding: 12px; }
+  .msg { min-height: 0; }
+  .mutebtn { top: 6px; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  body { font-size: 16px; }
+  .btn { padding: 12px 14px 14px; font-size: 0.7rem; }
+  .day, .card, .copy, .surf-desc, .qtext { padding: 14px 18px; }
+  .banner h1 { font-size: 1rem; }
+  .surf-name { font-size: 1.1rem; }
+  .ptitle span { font-size: 1.6rem; }
+  .qtext { font-size: 1rem; }
+  .chip { padding: 6px; font-size: 0.8rem; }
+  .member img { width: 60px; }
+  .mname { font-size: 0.5rem; padding: 6px; }
+}
 </style>
 <!-- music is loaded from assets/audio by the script -->
 <canvas id="beach" aria-hidden="true"></canvas>
@@ -1166,6 +1205,27 @@ function vTeam() {
 }
 
 
+
+// ---------- landscape layout: group each screen's blocks into two columns (CSS only splits them when the screen is wide)
+var SPLIT = {
+  home: { c1: [0, 1], c2: [2, 3] },
+  surf: { pre: [0, 1], c1: [2, 3], c2: [4, 5, 6] },
+  info: { pre: [0, 1], c1: [2, 3], c2: [4, 5], post: [6] },
+  menu: { pre: [0], c1: [1, 2], c2: [3] },
+  run: { c1: [3, 4], c2: [0, 1, 2, 5, 6, 7] },
+  q: { c1: [0, 1, 2], c2: "rest" },
+  about: { pre: [0], c1: [1], c2: [2], post: [3, 4] }
+};
+function layout(kind) {
+  var st = app.firstElementChild, sp = SPLIT[kind]; if (!st || !sp || !st.classList.contains("stack")) return;
+  var k = Array.prototype.slice.call(st.children), used = {};
+  function pick(a) { if (a === "rest") return k.filter(function (_, i) { return !used[i]; }); return (a || []).map(function (i) { used[i] = 1; return k[i]; }).filter(Boolean); }
+  var pre = pick(sp.pre), a = pick(sp.c1), post = pick(sp.post), b = pick(sp.c2);
+  var cols = document.createElement("div"); cols.className = "cols";
+  [a, b].forEach(function (g) { var c = document.createElement("div"); c.className = "col"; g.forEach(function (n) { c.appendChild(n); }); cols.appendChild(c); });
+  st.innerHTML = ""; pre.forEach(function (n) { st.appendChild(n); }); st.appendChild(cols); post.forEach(function (n) { st.appendChild(n); });
+}
+
 // ---------- routing
 function route() {
   var h = location.hash.slice(1) || "home", m = /^wave-([1-7])$/.exec(h), cur = h, html;
@@ -1177,6 +1237,7 @@ function route() {
   else if (h === "team") { html = vTeam(); cur = "about"; }
   else { cur = "home"; html = vHome(); }
   app.innerHTML = html;
+  layout(cur === "home" ? "home" : m ? "info" : h === "surf" ? "surf" : h === "about" ? "about" : h === "quiz" ? (S.run ? "run" : "menu") : h === "play" ? (S.qz ? "q" : "") : "");
   if (cur !== "quiz") S.run = null;
   tabsEl.innerHTML = TABS.map(function (t) {
     return '<button class="tab" data-go="' + t[0] + '"' + (t[0] === cur ? ' aria-current="page"' : "") + ">" + ICONS[t[0]] + "<span>" + t[1].toUpperCase() + "</span></button>";
