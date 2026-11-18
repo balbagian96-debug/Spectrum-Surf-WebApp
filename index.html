@@ -1257,15 +1257,15 @@ function layout(kind) {
 // ---------- narration: an optional pixel speaker on each card plays a pre-generated text-to-speech clip (assets/voice)
 var SAY = { a: null, name: null };
 var SPK = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M1 4h2V3h1V2h1v8H4V9H3V8H1z"/><path class="w1" fill="currentColor" d="M7 4h1v4H7z"/><path class="w2" fill="currentColor" d="M9 3h1v6H9z"/></svg>';
-function duck(on) { if (curTrack && MA[curTrack]) { try { MA[curTrack].volume = on ? 0.12 : 0.55; } catch (e) {} } }
-function sayStop() {
+function duck(on) { var t = curTrack && MA[curTrack]; if (!t) return; try { if (on) t.pause(); else if (userStarted && !AU.muted) { var p = t.play(); if (p && p.catch) p.catch(function () {}); } } catch (e) {} }
+function sayStop(keep) {
   if (SAY.a) { try { SAY.a.pause(); } catch (e) {} SAY.a = null; }
-  SAY.name = null; duck(false);
+  SAY.name = null; if (!keep) duck(false);
   document.querySelectorAll(".spk.on").forEach(function (b) { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); });
 }
 function sayToggle(name, btn) {
   if (SAY.name === name) { sayStop(); return; }
-  sayStop();
+  sayStop(true);
   var a = new Audio("assets/voice/" + name + ".mp3"); a.volume = 1; SAY.a = a; SAY.name = name;
   a.addEventListener("ended", function () { if (SAY.a === a) sayStop(); });
   a.play().then(function () { duck(true); if (btn) { btn.classList.add("on"); btn.setAttribute("aria-pressed", "true"); } }).catch(function () { SAY.a = null; SAY.name = null; });
